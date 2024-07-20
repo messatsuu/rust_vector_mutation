@@ -1,15 +1,18 @@
+use colored::Colorize;
+
 pub struct Operations {
     pub operations: Vec<Operation>,
 }
 
 impl Operations {
     pub fn new() -> Self {
-        let create = Operation::new('c', "creates a new element");
-        let update = Operation::new('u', "updates an element");
-        let delete = Operation::new('d', "deletes an element");
+        let create = Operation::new('c', "create a new element");
+        let update = Operation::new('u', "update an element");
+        let delete = Operation::new('d', "delete an element");
         let list = Operation::new('l', "list all elements");
+        let help = Operation::new('h', "list help");
         Operations {
-            operations: vec![create, update, delete, list],
+            operations: vec![create, update, delete, list, help],
         }
     }
 
@@ -18,7 +21,7 @@ impl Operations {
             .iter()
             .map(|operation| format!(
                 "({}) {}",
-                operation.operation_char, operation.description
+                operation.operation_char.to_string().bold().blue(), operation.description
             ))
             .collect::<Vec<String>>()
             .join("\n")

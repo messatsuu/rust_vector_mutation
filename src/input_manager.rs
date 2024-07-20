@@ -41,8 +41,9 @@ impl InputManager {
                 'd' => self.delete_element(),
                 'u' => self.update_element(),
                 'l' => self.list_elements(),
+                'h' => self.print_help(),
                 _ => {
-                    println!("Should be one of \n{}", self.viable_operations.list_operations());
+                    println!("operation \"{user_operation}\" not found. Please try again.");
                     continue;
                 }
             }
@@ -106,6 +107,10 @@ impl InputManager {
             let new_value = self.read_input();
             self.inputs[index] = new_value;
         }
+    }
+
+    fn print_help(&self) {
+        println!("Should be one of \n{}", self.viable_operations.list_operations());
     }
 
     fn list_elements(&self) {
