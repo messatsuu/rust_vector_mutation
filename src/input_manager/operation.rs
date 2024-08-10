@@ -11,8 +11,9 @@ impl Operations {
         let delete = Operation::new('d', "delete an element");
         let list = Operation::new('l', "list all elements");
         let help = Operation::new('h', "list help");
+        let clear = Operation::new('x', "clear screen");
         Operations {
-            operations: vec![create, update, delete, list, help],
+            operations: vec![create, update, delete, list, help, clear],
         }
     }
 
@@ -21,7 +22,7 @@ impl Operations {
             .iter()
             .map(|operation| format!(
                 "({}) {}",
-                operation.operation_char.to_string().bold().blue(), operation.description
+                operation.operation_char, operation.description
             ))
             .collect::<Vec<String>>()
             .join("\n")

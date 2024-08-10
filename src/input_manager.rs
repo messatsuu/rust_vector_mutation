@@ -1,6 +1,39 @@
 use crate::io;
+use std::{io::Write, process::Command};
+use colored::Colorize;
 
 mod operation;
+
+enum LogLevel {
+    Success,
+    Info,
+    Error
+}
+
+impl LogLevel {
+    fn to_color(&self, message: &str) -> colored::ColoredString {
+        match self {
+            LogLevel::Success => message.bold().green(),
+            LogLevel::Info => message.bold().blue(),
+            LogLevel::Error => message.bold().red(),
+        }
+    }
+
+    fn to_string(&self) -> String {
+        match self {
+            LogLevel::Success => "Success",
+            LogLevel::Info => "Info",
+            LogLevel::Error => "Error",
+        }.to_string()
+    }
+}
+
+macro_rules! prompt_output {
+    ($str: expr, $level: expr $(, $args:tt)*) => {
+        let formatted_message = format!($str, $($args)*);
+        println!("[{}] {}", $level.to_string(), $level.to_color(&formatted_message));
+    };
+}
 
 pub struct InputManager {
     inputs: Vec<String>,
@@ -16,6 +49,9 @@ impl InputManager {
     }
 
     fn read_input(&self) -> String {
+        print!("> ");
+        // This makes sure that the prompt is displayed before the user input (by flushing the buffer)
+        io::stdout().flush().expect("Failed to flush stdout");
         let mut input = String::new();
         io::stdin()
             .read_line(&mut input)
@@ -25,12 +61,10 @@ impl InputManager {
 
     pub fn process_operation(&mut self) {
         loop {
-            print!("~> ");
-
             let user_operation: char = match self.read_input().parse() {
                 Ok(input) => input,
                 Err(_) => {
-                    println!("Invalid input. Please enter a single character.");
+                    prompt_output!("Invalid input. Please enter a single character.", LogLevel::Error);
                     continue;
                 }
             };
@@ -42,8 +76,9 @@ impl InputManager {
                 'u' => self.update_element(),
                 'l' => self.list_elements(),
                 'h' => self.print_help(),
+                'x' => self.clear_screen(),
                 _ => {
-                    println!("operation \"{user_operation}\" not found. Please try again.");
+                    prompt_output!("operation \"{user_operation}\" not found. Type 'h' to see available options.", LogLevel::Error);
                     continue;
                 }
             }
@@ -55,26 +90,27 @@ impl InputManager {
         match index_str.parse::<usize>() {
             Ok(index) => Some(index),
             Err(_) => {
-                println!("not an integer");
+                prompt_output!("not an integer", LogLevel::Error);
                 None
             }
         }
     }
 
     fn create_element(&mut self) {
-        println!("create new element");
+        prompt_output!("create new element", LogLevel::Info);
         let element_value = self.read_input();
         self.inputs.push(element_value);
-        println!("Created sucessfully!");
+        prompt_output!("Created sucessfully!", LogLevel::Success);
     }
 
     fn delete_element(&mut self) {
         if self.inputs.is_empty() {
+            prompt_output!("No elements to delete", LogLevel::Info);
             println!("No elements to delete");
             return;
         }
 
-        println!("delete an element at given index");
+        prompt_output!("delete an element at given index", LogLevel::Info);
         self.list_elements();
 
         let element_index = self.read_index();
@@ -90,11 +126,11 @@ impl InputManager {
 
     fn update_element(&mut self) {
         if self.inputs.is_empty() {
-            println!("No elements to update");
+            prompt_output!("No elements to update", LogLevel::Info);
             return;
         }
 
-        println!("update an element at given index");
+        prompt_output!("update an element at given index", LogLevel::Info);
         self.list_elements();
         let element_index = self.read_index();
 
@@ -103,25 +139,38 @@ impl InputManager {
                 return;
             }
 
-            println!("Enter new value:");
+            prompt_output!("Enter new value:", LogLevel::Info);
             let new_value = self.read_input();
             self.inputs[index] = new_value;
+            prompt_output!("Value Updated!", LogLevel::Success);
         }
     }
 
     fn print_help(&self) {
-        println!("Should be one of \n{}", self.viable_operations.list_operations());
+        let operations = self.viable_operations.list_operations();
+        prompt_output!("Should be one of \n{operations}", LogLevel::Info);
+    }
+
+    fn clear_screen(&self) {
+        Command::new("clear")
+            .status()
+            .expect("Failed to clear screen");
     }
 
     fn list_elements(&self) {
-        println!("current elements: (\"{}\")", self.inputs.join(", "));
+        if self.inputs.is_empty() {
+            prompt_output!("The list is currently empty.", LogLevel::Info);
+            return;
+        }
+        let inputs = self.inputs.join(", ");
+        prompt_output!("current elements:\n\"{inputs}\"", LogLevel::Info);
     }
 
     fn is_in_bounds(&self, index: usize) -> bool {
         let bounds = self.inputs.len() - 1;
         let is_in_bounds = index <= bounds;
         if !is_in_bounds {
-            println!("Given index {index} is outside of bounds ({bounds})");
+            prompt_output!("Given index {index} is outside of bounds ({bounds})", LogLevel::Error);
         }
 
         is_in_bounds
