@@ -106,7 +106,6 @@ impl InputManager {
     fn delete_element(&mut self) {
         if self.inputs.is_empty() {
             prompt_output!("No elements to delete", LogLevel::Info);
-            println!("No elements to delete");
             return;
         }
 
